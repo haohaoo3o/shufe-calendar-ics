@@ -9,7 +9,9 @@
    "start": 7,
    "end": 9,
    "weeks": "2,4,6,8,10,12,14,16",
-   "note": "英文: Basic principles of Marxism；教师轮换: 丁晓钦/陆夏"
+   "note": "英文: Basic principles of Marxism；教师轮换: 丁晓钦/陆夏",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线上]马克思主义基本原理",
@@ -19,7 +21,9 @@
    "start": 7,
    "end": 9,
    "weeks": "3,5,7,9,11,13,15,17",
-   "note": "英文: Basic principles of Marxism；教师轮换: 丁晓钦/陆夏"
+   "note": "英文: Basic principles of Marxism；教师轮换: 丁晓钦/陆夏",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]数据发现",
@@ -29,7 +33,9 @@
    "start": 10,
    "end": 11,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Discoverying Data"
+   "note": "英文: Discoverying Data",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]中级宏观经济学",
@@ -39,7 +45,9 @@
    "start": 5,
    "end": 6,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13",
-   "note": "英文: Intermediate Macroeconomics"
+   "note": "英文: Intermediate Macroeconomics",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]中级宏观经济学",
@@ -49,7 +57,9 @@
    "start": 7,
    "end": 8,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13",
-   "note": "英文: Intermediate Macroeconomics"
+   "note": "英文: Intermediate Macroeconomics",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]经济法导论",
@@ -59,7 +69,9 @@
    "start": 0,
    "end": 1,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Introduction to Economic Law"
+   "note": "英文: Introduction to Economic Law",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]投资经济学",
@@ -69,7 +81,9 @@
    "start": 5,
    "end": 6,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Investment Economics"
+   "note": "英文: Investment Economics",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]市场营销",
@@ -79,7 +93,9 @@
    "start": 10,
    "end": 11,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Marketing"
+   "note": "英文: Marketing",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]数学分析（三）",
@@ -89,7 +105,9 @@
    "start": 5,
    "end": 6,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Mathematical Analysis III"
+   "note": "英文: Mathematical Analysis III",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]数学分析（三）",
@@ -99,7 +117,9 @@
    "start": 0,
    "end": 1,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Mathematical Analysis III"
+   "note": "英文: Mathematical Analysis III",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]常微分方程",
@@ -109,7 +129,9 @@
    "start": 2,
    "end": 4,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Ordinary Differential Equations"
+   "note": "英文: Ordinary Differential Equations",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]体育（三）",
@@ -119,7 +141,9 @@
    "start": 2,
    "end": 3,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Physical Education III"
+   "note": "英文: Physical Education III",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]概率论与数理统计",
@@ -129,7 +153,9 @@
    "start": 2,
    "end": 4,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Probability Theory and Mathematical Statistics"
+   "note": "英文: Probability Theory and Mathematical Statistics",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   },
   {
    "name": "[线下]概率论与数理统计",
@@ -139,7 +165,9 @@
    "start": 2,
    "end": 4,
    "weeks": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17",
-   "note": "英文: Probability Theory and Mathematical Statistics"
+   "note": "英文: Probability Theory and Mathematical Statistics",
+   "reminders": "上课前 10 分钟",
+   "remind_minutes": 10
   }
  ]
 }

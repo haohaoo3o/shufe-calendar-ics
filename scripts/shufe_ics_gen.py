@@ -129,15 +129,33 @@ def course_event(cal: Calendar, course: dict, semester_start: date, periods: dic
     ev.add("uid", hashlib.sha1(uid_src.encode()).hexdigest() + "@shufe-calendar")
     if course.get("location"):
         ev.add("location", course["location"])
+    # 备注: 周次 + 节次时间 + 教师 + 教室 + 课程号 + 提醒规则
     desc_lines = [f"第 {weeks[0]}-{weeks[-1]} 周" if len(weeks) > 1 else f"第 {weeks[0]} 周"]
+    try:
+        t0 = periods[str(course["start"])][0]
+        t1 = periods[str(course["end"])][1]
+        desc_lines.append(f"第 {course['start']+1}-{course['end']+1} 节（{t0}-{t1}）")
+    except KeyError:
+        pass
     if course.get("teacher"):
         desc_lines.append(f"教师：{course['teacher']}")
+    if course.get("location"):
+        desc_lines.append(f"教室：{course['location']}")
     if course.get("note"):
         desc_lines.append(course["note"])
+    reminder = course.get("reminders") or "上课前 10 分钟"
+    desc_lines.append(f"⏰ 提醒：{reminder}")
     ev.add("description", "\n".join(desc_lines))
     ev.add("dtstart", dtstart)
     ev.add("dtend", dtend)
     ev.add("rrule", {"freq": "weekly", "count": len(weeks)})
+    # VALARM: ICS 官方提醒组件 (macOS 订阅时若未勾选"移除提醒"则生效; iOS 订阅不触发)
+    from icalendar import Alarm
+    alarm = Alarm()
+    alarm.add("action", "DISPLAY")
+    alarm.add("description", reminder)
+    alarm.add("trigger", timedelta(minutes=-int(course.get("remind_minutes", 10))))
+    ev.add_component(alarm)
     # EXDATE：排除非上课周（单双周/假期）
     exdates = []
     for i in range(1, weeks[-1] + 1):
