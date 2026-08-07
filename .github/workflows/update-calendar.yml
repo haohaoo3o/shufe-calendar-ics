@@ -21,9 +21,13 @@ jobs:
       - name: Install deps
         run: pip install icalendar
 
-      - name: Generate ICS (demo mode; switch to --eams when EAMS opens)
+      - name: Generate ICS (EAMS live; fallback to committed snapshot)
+        env:
+          SHUFE_CRED_FILE: /tmp/shufe_cred.txt
         run: |
-          python scripts/shufe_ics_gen.py --demo --outdir dist
+          echo "${{ secrets.SHUFU_CRED }}" > /tmp/shufe_cred.txt
+          python scripts/shufe_ics_gen.py --eams --outdir dist \
+            || python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --semester-start 2026-09-07 --outdir dist
 
       - name: Commit & push if changed
         run: |

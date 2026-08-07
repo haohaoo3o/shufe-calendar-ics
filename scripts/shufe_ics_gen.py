@@ -29,14 +29,14 @@ from icalendar import Calendar, Event, Timezone, TimezoneStandard, vText
 
 TZ = ZoneInfo("Asia/Shanghai")
 
-# 上财节次 → 时间映射（默认值，开学后以 EAMS 课表数据为准；可通过 config 覆盖）
+# 上财真实节次 → 时间映射（0-based，来自 EAMS 课表页表头 2026-08 实测）
 DEFAULT_PERIODS = {
-    "1": ("08:00", "08:45"), "2": ("08:55", "09:40"),
-    "3": ("10:00", "10:45"), "4": ("10:55", "11:40"),
-    "5": ("13:30", "14:15"), "6": ("14:25", "15:10"),
-    "7": ("15:30", "16:15"), "8": ("16:25", "17:10"),
-    "9": ("17:20", "18:05"), "10": ("18:30", "19:15"),
-    "11": ("19:25", "20:10"), "12": ("20:20", "21:05"),
+    "0": ("08:00", "08:45"), "1": ("08:55", "09:40"),
+    "2": ("10:05", "10:50"), "3": ("11:00", "11:45"), "4": ("11:55", "12:40"),
+    "5": ("13:20", "14:05"), "6": ("14:15", "15:00"),
+    "7": ("15:25", "16:10"), "8": ("16:20", "17:05"), "9": ("17:15", "18:00"),
+    "10": ("18:00", "18:45"), "11": ("18:55", "19:40"),
+    "12": ("19:50", "20:35"), "13": ("20:45", "21:30"),
 }
 
 # 内置示例课表（2025级投资学-信息与计算科学 第3学期 培养计划建议课，仅供链路测试！）
@@ -56,8 +56,10 @@ DEMO_COURSES = [
 ]
 
 
-def parse_weeks(weeks_str: str):
-    """'1-16' -> {1..16}; '1,3,5' -> {1,3,5}; 支持混合 '1-8,10-16'"""
+def parse_weeks(weeks_str):
+    """'1-16' -> {1..16}; '1,3,5' -> {1,3,5}; 支持混合 '1-8,10-16'; 也接受 list"""
+    if isinstance(weeks_str, (list, tuple, set)):
+        return sorted(int(w) for w in weeks_str)
     weeks = set()
     for part in str(weeks_str).split(","):
         part = part.strip()
@@ -169,6 +171,123 @@ def build_exams_ics(exams: list) -> bytes:
     return render(cal)
 
 
+def fetch_eams_courses():
+    """从 EAMS 抓取当前学年课表 → 标准课程 dict 列表
+    流程: 表单编码 + 双键(semesterId&semester.id) + dataQuery 学期发现 + TaskActivity 解析
+    """
+    import os
+    import re
+    import urllib.parse
+    import urllib.request
+    import urllib.error
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from fetch_eams import ensure_session
+
+    EAMS = "https://eams.sufe.edu.cn/eams"
+    s = ensure_session()
+    H = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0",
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Referer": f"{EAMS}/courseTableForStd!index.action",
+    }
+
+    def form_post(url, params):
+        body = urllib.parse.urlencode(params).encode()
+        req = urllib.request.Request(url, data=body, method="POST", headers=H)
+        try:
+            resp = s.opener.open(req, timeout=20)
+            return resp.status, resp.read()
+        except urllib.error.HTTPError as e:
+            return e.code, e.read()
+
+    # 1) 会话热身: projectId 查询设置上下文 (必须, 否则学期列表为空)
+    form_post(f"{EAMS}/dataQuery.action", {"dataType": "projectId", "entityId": ""})
+    raw = ""
+    for attempt in range(4):
+        st, b = form_post(f"{EAMS}/dataQuery.action",
+                          {"dataType": "semesterCalendar", "tagId": "x",
+                           "empty": "false", "value": "", "entityId": ""})
+        raw = b.decode("utf-8", "ignore")
+        if re.search(r"y0:\[\{id:\d+,", raw):
+            break
+        import time
+        time.sleep(2)
+    m0 = re.search(r"y0:\[\{id:(\d+),", raw)
+    if not m0:
+        raise RuntimeError(f"学期列表解析失败: {raw[:200]}")
+    sid = m0.group(1)  # 最新学年 (y0) 第1学期
+    print(f"[EAMS] 当前学期 semesterId={sid}")
+
+    # 2) 课表 (semesterId + semester.id 双键都必须; EAMS 模板间歇性出错, 重试)
+    html = ""
+    for attempt in range(4):
+        st, b = form_post(f"{EAMS}/courseTableForStd!courseTable.action",
+                          {"semesterId": sid, "semester.id": sid, "ids": "410965",
+                           "project.id": "1", "setting.kind": "std", "startWeek": "1"})
+        html = b.decode("utf-8", "ignore")
+        if ("未开放" not in html and "FreeMarker" not in html
+                and html.count('new TaskActivity("') > 5):
+            break
+        import time
+        time.sleep(2)
+    if "未开放" in html or "FreeMarker" in html or html.count('new TaskActivity("') <= 5:
+        raise RuntimeError(f"课表抓取失败(重试后仍异常, len={len(html)})")
+
+    # 3) 解析 TaskActivity + index
+    act_pat = re.compile(r'new\s+TaskActivity\("([^"]*)","([^"]*)","([^"]*)",\s*("[^"]*"|\w+),\s*"([^"]*)","([^"]*)","([^"]*)"\)')
+    name_pat = re.compile(r'var\s+courseNameLessonNo\s*=\s*"([^"]*)"')
+    idx_pat = re.compile(r'index\s*=\s*(\d+)\*unitCount\+(\d+);')
+    out = []
+    for m in act_pat.finditer(html):
+        tid, tname, cno, cname_expr, rid, room, weeks = m.groups()
+        names = name_pat.findall(html[:m.start()])
+        cname = names[-1] if names else cname_expr.strip('"')
+        seg_after = html[m.end():]
+        nxt = act_pat.search(seg_after)
+        seg_until = seg_after[:nxt.start()] if nxt else seg_after
+        for wd, per in idx_pat.findall(seg_until):
+            week_list = [i + 1 for i, ch in enumerate(weeks) if ch == "1"]
+            out.append({"teacher": tname, "course_no": cno, "course_name": cname,
+                        "room": room, "weekday": int(wd), "period": int(per),
+                        "week_list": week_list})
+
+    # 4) 合并: 同课名+周几+节次范围 → 周次并集, 教室轮换合并
+    merged = {}
+    for r in out:
+        key = (r["course_name"], r["weekday"], r["period"])
+        if key not in merged:
+            merged[key] = {"course_name": r["course_name"], "teacher": r["teacher"],
+                           "rooms": [r["room"]], "weekday": r["weekday"],
+                           "start": r["period"], "end": r["period"],
+                           "weeks": set(r["week_list"]), "course_no": r["course_no"]}
+        else:
+            mrec = merged[key]
+            mrec["start"] = min(mrec["start"], r["period"])
+            mrec["end"] = max(mrec["end"], r["period"])
+            mrec["weeks"] |= set(r["week_list"])
+            if r["room"] not in mrec["rooms"]:
+                mrec["rooms"].append(r["room"])
+
+    courses = []
+    for key, r in sorted(merged.items()):
+        course_name = r["course_name"]
+        # 去掉课序号后缀 "(0800)" 保持标题简洁, 课序号进描述
+        title = re.sub(r"\(\d+\)$", "", course_name).strip()
+        weeks_sorted = sorted(r["weeks"])
+        room = " / ".join(r["rooms"][:2]) if len(r["rooms"]) > 1 else r["rooms"][0]
+        note = f"课程号: {r['course_no']}"
+        if len(r["rooms"]) > 1:
+            note += "；教室轮换: " + " / ".join(r["rooms"])
+        courses.append({
+            "name": title, "teacher": r["teacher"], "location": room,
+            "day": r["weekday"] + 1, "start": r["start"], "end": r["end"],
+            "weeks": ",".join(str(w) for w in weeks_sorted), "note": note,
+        })
+    print(f"[EAMS] 解析 {len(out)} 条活动 → 合并 {len(courses)} 门课次")
+    return courses
+
+
 def main():
     ap = argparse.ArgumentParser(description="SHUFE 课表 → ICS 生成器")
     ap.add_argument("--demo", action="store_true", help="使用内置示例课表")
@@ -189,14 +308,20 @@ def main():
         courses = DEMO_COURSES
     elif args.courses:
         with open(args.courses, encoding="utf-8") as f:
-            courses = json.load(f)
+            raw = json.load(f)
+        if isinstance(raw, dict):
+            # 支持 {"semester_start": "...", "courses": [...]} 包装格式
+            if raw.get("semester_start") and not args.semester_start:
+                ap.error("--courses 带 semester_start 时需配合 --semester-start 显式指定")
+            semester_start = date.fromisoformat(args.semester_start)
+            courses = raw["courses"]
+        else:
+            courses = raw
     elif args.eams:
-        sys.path.insert(0, ".")
         try:
-            from fetch_eams import fetch_course_table  # 开学后由 fetch_eams.py 提供
-            courses = fetch_course_table()
-        except ImportError:
-            print("[EAMS] fetch_eams.py 未提供 fetch_course_table()，请开学后更新", file=sys.stderr)
+            courses = fetch_eams_courses()
+        except Exception as e:
+            print(f"[EAMS] 抓取失败: {e}", file=sys.stderr)
             sys.exit(1)
     else:
         ap.error("需要 --demo / --courses / --eams 之一")
