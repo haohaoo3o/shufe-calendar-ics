@@ -26,7 +26,7 @@
    "remind_minutes": 10
   },
   {
-   "name": "数据发现",
+   "name": "数据世界探秘",
    "teacher": "吴纯杰",
    "location": "科研实验大楼B102",
    "day": 1,
@@ -62,7 +62,7 @@
    "remind_minutes": 10
   },
   {
-   "name": "经济法导论",
+   "name": "经济法概论",
    "teacher": "郑晖",
    "location": "国定路梯二",
    "day": 4,
@@ -86,7 +86,7 @@
    "remind_minutes": 10
   },
   {
-   "name": "市场营销",
+   "name": "市场营销学",
    "teacher": "楼尊",
    "location": "三教202",
    "day": 5,
@@ -98,7 +98,7 @@
    "remind_minutes": 10
   },
   {
-   "name": "数学分析（三）",
+   "name": "数学分析Ⅲ（双学位）",
    "teacher": "胡业新",
    "location": "二教111",
    "day": 1,
@@ -110,7 +110,7 @@
    "remind_minutes": 10
   },
   {
-   "name": "数学分析（三）",
+   "name": "数学分析Ⅲ（双学位）",
    "teacher": "胡业新",
    "location": "二教111",
    "day": 3,
@@ -134,7 +134,7 @@
    "remind_minutes": 10
   },
   {
-   "name": "体育（三）",
+   "name": "体育Ⅲ（排球）",
    "teacher": "陈瑜",
    "location": "武川排球场",
    "day": 2,

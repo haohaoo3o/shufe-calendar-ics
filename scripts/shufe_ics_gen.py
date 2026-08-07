@@ -29,18 +29,18 @@ from icalendar import Calendar, Event, Timezone, TimezoneStandard, vText
 
 TZ = ZoneInfo("Asia/Shanghai")
 
-# 英文课名 → 中文（EAMS 课表为英文 locale；新课程需补充）
+# 英文课名 → 中文（EAMS 系统正式名称，2026-08-08 从课表页权威列表核实；数字用罗马数字 Ⅲ）
 EN_ZH_MAP = {
     "Probability Theory and Mathematical Statistics": "概率论与数理统计",
-    "Mathematical Analysis III": "数学分析（三）",
-    "Discoverying Data": "数据发现",
-    "Physical Education III": "体育（三）",
+    "Mathematical Analysis III": "数学分析Ⅲ（双学位）",
+    "Discoverying Data": "数据世界探秘",
+    "Physical Education III": "体育Ⅲ（排球）",
     "Intermediate Macroeconomics": "中级宏观经济学",
     "Basic principles of Marxism": "马克思主义基本原理",
-    "Introduction to Economic Law": "经济法导论",
+    "Introduction to Economic Law": "经济法概论",
     "Investment Economics": "投资经济学",
     "Ordinary Differential Equations": "常微分方程",
-    "Marketing": "市场营销",
+    "Marketing": "市场营销学",
 }
 
 # 上财真实节次 → 时间映射（0-based，来自 EAMS 课表页表头 2026-08 实测）
