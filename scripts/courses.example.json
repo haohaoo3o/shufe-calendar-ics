@@ -1,0 +1,11 @@
+{
+  "semester_start": "2026-09-07",
+  "courses": [
+    {"name": "课程名", "teacher": "教师", "location": "教室",
+     "day": 1, "start": 1, "end": 2, "weeks": "1-16", "note": "备注（可选）"},
+    {"name": "单周课示例", "teacher": "", "location": "教室",
+     "day": 3, "start": 3, "end": 4, "weeks": "1,3,5,7,9,11,13,15"},
+    {"name": "双周课示例", "teacher": "", "location": "教室",
+     "day": 4, "start": 5, "end": 6, "weeks": "2,4,6,8,10,12,14,16"}
+  ]
+}
