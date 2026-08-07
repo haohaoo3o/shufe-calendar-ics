@@ -26,7 +26,8 @@ for m in act_pat.finditer(html):
         })
 
 for r in out:
-    r["week_list"] = [i + 1 for i, ch in enumerate(r["weeks"]) if ch == "1"]
+    # vaildWeeks: index 0 为占位符, index 1 = 第 1 周 → week = index (勿 +1!)
+    r["week_list"] = [i for i, ch in enumerate(r["weeks"]) if ch == "1" and i >= 1]
     r.pop("weeks", None)
 
 # 按 课名+教师+教室+周次 合并连续节次
