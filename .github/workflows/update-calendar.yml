@@ -27,7 +27,7 @@ jobs:
         run: |
           echo "${{ secrets.SHUFU_CRED }}" > /tmp/shufe_cred.txt
           python scripts/shufe_ics_gen.py --eams --outdir dist \
-            || python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --semester-start 2026-09-07 --outdir dist
+            || python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --outdir dist
 
       - name: Commit & push if changed
         run: |
