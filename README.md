@@ -8,9 +8,11 @@
 | 日历 | 地址 |
 | --- | --- |
 | 课表 | `https://haohaoo3o.github.io/shufe-calendar-ics/dist/course.ics` |
+| 校历/节假日 | `https://haohaoo3o.github.io/shufe-calendar-ics/dist/holidays.ics` |
 | webcal 版 | `webcal://haohaoo3o.github.io/shufe-calendar-ics/dist/course.ics` |
 
-✅ **当前为 2026-2027 学年第 1 学期真实课表**（数据源：EAMS 教务系统，13 门课 / 16 个时间段，第 2-17 周）。
+✅ **课表 = 2026-2027 学年第 1 学期真实课表**（EAMS 数据，中文课名 + [线下]/[线上] 标注，14 门课次，第 2-17 周）；
+✅ **校历 = 官方校历解析**（开学 8/31、中秋 9/25、国庆 10/1、考试周 12/21-1/1、寒假 1/18 起，每周日自动监控校历图片 hash，更新时自动识别并刷新）。
 
 ## iPhone / Mac 订阅步骤
 
