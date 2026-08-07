@@ -285,7 +285,7 @@ def fetch_eams_courses():
             "weeks": ",".join(str(w) for w in weeks_sorted), "note": note,
         })
     print(f"[EAMS] 解析 {len(out)} 条活动 → 合并 {len(courses)} 门课次")
-    return courses
+    return {"semester_id": int(sid), "courses": courses}
 
 
 def main():
@@ -319,7 +319,8 @@ def main():
             courses = raw
     elif args.eams:
         try:
-            courses = fetch_eams_courses()
+            res = fetch_eams_courses()
+            courses = res["courses"]
         except Exception as e:
             print(f"[EAMS] 抓取失败: {e}", file=sys.stderr)
             sys.exit(1)
