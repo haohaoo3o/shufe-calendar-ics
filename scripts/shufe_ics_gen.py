@@ -311,11 +311,31 @@ def fetch_eams_courses():
     return {"semester_id": int(sid), "courses": courses}
 
 
+def build_holidays_ics(events_file: str) -> bytes:
+    """校历日历: calendar_events.json → holidays.ics（全天事件）"""
+    import hashlib
+    with open(events_file, encoding="utf-8") as f:
+        data = json.load(f)
+    cal = new_calendar("上财校历", "SHUFE 校历/节假日订阅源")
+    for sem, events in data.items():
+        for e in events:
+            d0 = date.fromisoformat(e["date"])
+            d1 = date.fromisoformat(e["end"]) if e.get("end") else d0
+            ev = Event()
+            ev.add("summary", e["title"])
+            ev.add("uid", hashlib.sha1(f"{sem}|{e['date']}|{e['title']}".encode()).hexdigest() + "@shufe-calendar")
+            ev.add("dtstart", d0)
+            ev.add("dtend", d1 + timedelta(days=1))
+            cal.add_component(ev)
+    return render(cal)
+
+
 def main():
     ap = argparse.ArgumentParser(description="SHUFE 课表 → ICS 生成器")
     ap.add_argument("--demo", action="store_true", help="使用内置示例课表")
     ap.add_argument("--courses", help="课程 JSON 文件路径")
     ap.add_argument("--eams", action="store_true", help="从 EAMS 拉取课表（开学后可用）")
+    ap.add_argument("--holidays", metavar="JSON", help="从校历 JSON 生成 holidays.ics")
     ap.add_argument("--semester-start", default="2026-08-31", help="开学第一周周一日期（2026-2027-1 = 2026-08-31，校历确认）")
     ap.add_argument("--periods", help="节次时间映射 JSON（可选）")
     ap.add_argument("--outdir", default="dist", help="输出目录（默认 ./dist）")
@@ -326,6 +346,14 @@ def main():
     if args.periods:
         with open(args.periods, encoding="utf-8") as f:
             periods = {str(k): tuple(v) for k, v in json.load(f).items()}
+
+    if args.holidays:
+        import os
+        os.makedirs(args.outdir, exist_ok=True)
+        with open(os.path.join(args.outdir, "holidays.ics"), "wb") as f:
+            f.write(build_holidays_ics(args.holidays))
+        print(f"[OK] 生成 {args.outdir}/holidays.ics")
+        return
 
     if args.demo:
         courses = DEMO_COURSES
