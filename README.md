@@ -9,10 +9,12 @@
 | --- | --- |
 | 课表 | `https://haohaoo3o.github.io/shufe-calendar-ics/dist/course.ics` |
 | 校历/节假日 | `https://haohaoo3o.github.io/shufe-calendar-ics/dist/holidays.ics` |
+| 个人日程 | `https://haohaoo3o.github.io/shufe-calendar-ics/dist/events.ics` |
 | webcal 版 | `webcal://haohaoo3o.github.io/shufe-calendar-ics/dist/course.ics` |
 
 ✅ **课表 = 2026-2027 学年第 1 学期真实课表**（EAMS 数据，中文课名 + [线下]/[线上] 标注，14 门课次，第 2-17 周）；
-✅ **校历 = 官方校历解析**（开学 8/31、中秋 9/25、国庆 10/1、考试周 12/21-1/1、寒假 1/18 起，每周日自动监控校历图片 hash，更新时自动识别并刷新）。
+✅ **校历 = 官方校历解析**（开学 8/31、中秋 9/25、国庆 10/1、考试周 12/21-1/1、寒假 1/18 起，每周日自动监控校历图片 hash，更新时自动识别并刷新）；
+✅ **个人日程 = 通用日程订阅源**（培训/会议/考试等单次事件，数据源 `scripts/events.json`，苹果日历订阅后自动同步）。
 
 ## iPhone / Mac 订阅步骤
 
@@ -42,6 +44,26 @@ python scripts/shufe_ics_gen.py --demo                        # 示例课表
 ```
 
 输出到 `dist/course.ics`。课程 JSON 字段：`name / teacher / location / day(1=周一) / start(0-based节次) / end / weeks("1-16" 或 "1,3,5")`。
+
+## 添加个人日程（events.ics）
+
+编辑 `scripts/events.json`，追加一条：
+
+```json
+{
+  "title": "事件标题",
+  "start": "2026-08-20T19:00",
+  "end": "2026-08-20T20:00",
+  "location": "地点/会议号",
+  "note": "备注说明"
+}
+```
+
+然后重新生成并推送（`git add dist/events.ics` 一并提交），苹果日历会在下次刷新时自动同步新事件：
+
+```bash
+python scripts/shufe_ics_gen.py --events scripts/events.json --outdir dist
+```
 
 ## 路线图
 

@@ -192,6 +192,31 @@ def build_exams_ics(exams: list) -> bytes:
     return render(cal)
 
 
+def build_events_ics(events_file: str) -> bytes:
+    """个人日程: events.json → events.ics（单次事件，培训/会议/考试等通用日程）
+    events: [{title, start:'2026-08-20T19:00', end:'2026-08-20T20:00', location, note}]
+    UID 用 sha1(title|start|location) 保证稳定，订阅刷新时苹果据此去重/更新"""
+    import hashlib
+    with open(events_file, encoding="utf-8") as f:
+        events = json.load(f)
+    cal = new_calendar("我的日程", "SHUFE 个人日程订阅源（培训/会议/考试等）")
+    for e in events:
+        ev = Event()
+        ev.add("summary", e["title"])
+        if e.get("location"):
+            ev.add("location", e["location"])
+        if e.get("note"):
+            ev.add("description", e["note"])
+        start = datetime.fromisoformat(e["start"]).replace(tzinfo=TZ)
+        end = datetime.fromisoformat(e["end"]).replace(tzinfo=TZ)
+        ev.add("dtstart", start)
+        ev.add("dtend", end)
+        ev.add("uid", hashlib.sha1(
+            f"{e['title']}|{e['start']}|{e.get('location', '')}".encode()).hexdigest() + "@shufe-calendar")
+        cal.add_component(ev)
+    return render(cal)
+
+
 def fetch_eams_courses():
     """从 EAMS 抓取当前学年课表 → 标准课程 dict 列表
     流程: 表单编码 + 双键(semesterId&semester.id) + dataQuery 学期发现 + TaskActivity 解析
@@ -343,6 +368,7 @@ def main():
     ap.add_argument("--courses", help="课程 JSON 文件路径")
     ap.add_argument("--eams", action="store_true", help="从 EAMS 拉取课表（开学后可用）")
     ap.add_argument("--holidays", metavar="JSON", help="从校历 JSON 生成 holidays.ics")
+    ap.add_argument("--events", metavar="JSON", help="从日程 JSON 生成 events.ics（培训/会议等通用日程）")
     ap.add_argument("--semester-start", default="2026-08-31", help="开学第一周周一日期（2026-2027-1 = 2026-08-31，校历确认）")
     ap.add_argument("--periods", help="节次时间映射 JSON（可选）")
     ap.add_argument("--outdir", default="dist", help="输出目录（默认 ./dist）")
@@ -360,6 +386,14 @@ def main():
         with open(os.path.join(args.outdir, "holidays.ics"), "wb") as f:
             f.write(build_holidays_ics(args.holidays))
         print(f"[OK] 生成 {args.outdir}/holidays.ics")
+        return
+
+    if args.events:
+        import os
+        os.makedirs(args.outdir, exist_ok=True)
+        with open(os.path.join(args.outdir, "events.ics"), "wb") as f:
+            f.write(build_events_ics(args.events))
+        print(f"[OK] 生成 {args.outdir}/events.ics")
         return
 
     if args.demo:
