@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# 系统/编辑器
+Thumbs.db
+.DS_Store
+*.swp
+
+# 凭据类（勿入库）
+*.cred.txt
+shufe_cred.txt
