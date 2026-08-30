@@ -10,7 +10,7 @@
 | 课表 | `https://haohaoo3o.github.io/shufe-calendar-ics/dist/course.ics` |
 | webcal 版 | `webcal://haohaoo3o.github.io/shufe-calendar-ics/dist/course.ics` |
 
-✅ **当前为 2026-2027 学年第 1 学期真实课表**（数据源：EAMS 教务系统，13 门课 / 16 个时间段，第 2-17 周）。
+✅ **当前为 2026-2027 学年第 1 学期真实课表**（数据源：EAMS 教务系统，14 门课次，第 1-16 周）。
 
 ## iPhone / Mac 订阅步骤
 
@@ -25,7 +25,7 @@
 
 - 数据源：EAMS `courseTableForStd!courseTable.action`（2026-2027-1 学期 id=3928）
 - GitHub Actions 每天 14:00（北京时间）自动拉取最新课表并重新发布；EAMS 不可用时回退到仓库内快照
-- 学期起始周：**2026-08-31**（第 1 周，校历确认在读生 8/31 正式上课）；个人课表第 1 周无课，实际从第 2 周（9/7）开始（RRULE + EXDATE 精确对齐）
+- 学期起始周：**2026-08-31**（第 1 周，校历确认在读生 8/31 正式上课）；全周课第 1-16 周均有课；隔周轮换课（马原：线下奇周/线上偶周）用 RRULE + EXDATE 精确对齐
 - 节次时间：上财真实作息（08:00–21:30，14 时段，来自 EAMS 表头实测）
 - 课程名中文（自动映射），[线下]/[线上] 前缀区分授课模式；隔周轮换课程（如马原）拆分为两条独立事件
 - 时区：`TZID=Asia/Shanghai` + VTIMEZONE，跨时区不错位
@@ -35,7 +35,7 @@
 ```bash
 pip install icalendar
 python scripts/shufe_ics_gen.py --eams                        # 从 EAMS 实时拉取（需凭据）
-python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --semester-start 2026-09-07  # 用快照
+python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --semester-start 2026-08-31  # 用快照
 python scripts/shufe_ics_gen.py --demo                        # 示例课表
 ```
 

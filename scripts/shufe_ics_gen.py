@@ -136,7 +136,10 @@ def course_event(cal: Calendar, course: dict, semester_start: date, periods: dic
     ev.add("description", "\n".join(desc_lines))
     ev.add("dtstart", dtstart)
     ev.add("dtend", dtend)
-    ev.add("rrule", {"freq": "weekly", "count": len(weeks)})
+    # RRULE count 必须覆盖到最后一个上课周(weeks[-1]), 不能用 len(weeks):
+    # EXDATE 负责排除, RRULE 必须生成全部候选周, 否则后半学期的事件全部丢失
+    # (2026-08-30 踩坑: 马原 count=8 只覆盖前 8 周, 第 9-16 周消失)
+    ev.add("rrule", {"freq": "weekly", "count": weeks[-1]})
     # VALARM: ICS 官方提醒组件 (macOS 订阅时若未勾选"移除提醒"则生效; iOS 订阅不触发)
     from icalendar import Alarm
     reminder = course.get("reminders") or "上课前 10 分钟"
@@ -146,11 +149,13 @@ def course_event(cal: Calendar, course: dict, semester_start: date, periods: dic
     alarm.add("trigger", timedelta(minutes=-int(course.get("remind_minutes", 10))))
     ev.add_component(alarm)
     # EXDATE：排除非上课周（单双周/假期）
+    # 注意: EXDATE 必须与 DTSTART 的时间(含时分)精确一致, 用 00:00 会全部失效
+    # (2026-08-30 踩坑: 马原两条事件 EXDATE 00:00 不匹配 15:25, 每周三双双出现)
     exdates = []
     for i in range(1, weeks[-1] + 1):
         if i not in weeks:
             d = semester_start + timedelta(days=course["day"] - 1 + 7 * (i - 1))
-            exdates.append(datetime(d.year, d.month, d.day, 0, 0, tzinfo=TZ))
+            exdates.append(datetime(d.year, d.month, d.day, start_h, start_m, tzinfo=TZ))
     if exdates:
         ev.add("exdate", exdates)
     cal.add_component(ev)
