@@ -19,15 +19,26 @@ jobs:
           python-version: '3.12'
 
       - name: Install deps
-        run: pip install icalendar
+        run: pip install icalendar cryptography
 
-      - name: Generate ICS (EAMS live; fallback to committed snapshot)
+      - name: Generate ICS (EAMS live; fallback to committed snapshot with RED FLAG)
         env:
           SHUFE_CRED_FILE: /tmp/shufe_cred.txt
         run: |
           echo "${{ secrets.SHUFU_CRED }}" > /tmp/shufe_cred.txt
-          python scripts/shufe_ics_gen.py --eams --outdir dist \
-            || python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --outdir dist
+          if python scripts/shufe_ics_gen.py --eams --outdir dist; then
+            echo "LIVE_OK=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::EAMS 实时抓取失败, 回退到提交的快照 (课表可能是旧数据, 请检查登录/接口!)"
+            echo "LIVE_OK=false" >> "$GITHUB_ENV"
+            python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --outdir dist
+          fi
+
+      - name: Fail if live fetch failed (anti-silent-fallback)
+        if: env.LIVE_OK == 'false'
+        run: |
+          echo "EAMS 实时抓取失败, 本次仅用快照生成。连续出现时必须排查!"
+          exit 1
 
       - name: Commit & push if changed
         run: |

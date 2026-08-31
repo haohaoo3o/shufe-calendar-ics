@@ -141,7 +141,8 @@ def fetch_course_table(s, conn):
     sid = m0.group(1)
     print(f"[课表] 学期 {sid}")
     st, b = form_post(f"{EAMS_BASE}/courseTableForStd!courseTable.action",
-                      {"semesterId": sid, "semester.id": sid, "ids": "410965",
+                      {"ignoreHead": "1", "projectType": "",
+                       "semesterId": sid, "semester.id": sid, "ids": "410965",
                        "project.id": "1", "setting.kind": "std", "startWeek": "1"})
     html = b.decode("utf-8", "ignore")
     if "未开放" in html or "FreeMarker" in html or html.count('new TaskActivity("') <= 5:

@@ -270,11 +270,13 @@ def fetch_eams_courses():
     sid = m0.group(1)  # 最新学年 (y0) 第1学期
     print(f"[EAMS] 当前学期 semesterId={sid}")
 
-    # 2) 课表 (semesterId + semester.id 双键都必须; EAMS 模板间歇性出错, 重试)
+    # 2) 课表 (ignoreHead=1 必带: index 页隐藏表单字段, 缺了会触发服务端 include
+    #    courseTableHead.ftl 报 FreeMarker template error; semesterId + semester.id 双键)
     html = ""
     for attempt in range(4):
         st, b = form_post(f"{EAMS}/courseTableForStd!courseTable.action",
-                          {"semesterId": sid, "semester.id": sid, "ids": "410965",
+                          {"ignoreHead": "1", "projectType": "",
+                           "semesterId": sid, "semester.id": sid, "ids": "410965",
                            "project.id": "1", "setting.kind": "std", "startWeek": "1"})
         html = b.decode("utf-8", "ignore")
         if ("未开放" not in html and "FreeMarker" not in html
@@ -286,7 +288,9 @@ def fetch_eams_courses():
         raise RuntimeError(f"课表抓取失败(重试后仍异常, len={len(html)})")
 
     # 3) 解析 TaskActivity + index
-    act_pat = re.compile(r'new\s+TaskActivity\("([^"]*)","([^"]*)","([^"]*)",\s*("[^"]*"|\w+),\s*"([^"]*)","([^"]*)","([^"]*)"\)')
+    # 第4参数 2026-08-31 起为 this.courseNameLessonNo 表达式(含点号), 旧格式是引号字符串:
+    # 模式须兼容 ("..."|[\w.]+), 否则匹配断裂 → index 赋值串到其他课 → 课次爆炸
+    act_pat = re.compile(r'new\s+TaskActivity\("([^"]*)","([^"]*)","([^"]*)",\s*("[^"]*"|[\w.]+),\s*"([^"]*)","([^"]*)","([^"]*)"\)')
     name_pat = re.compile(r'var\s+courseNameLessonNo\s*=\s*"([^"]*)"')
     idx_pat = re.compile(r'index\s*=\s*(\d+)\*unitCount\+(\d+);')
     out = []
@@ -304,46 +308,55 @@ def fetch_eams_courses():
                         "room": room, "weekday": int(wd), "period": int(per),
                         "week_list": week_list})
 
-    # 4) 合并: 线下/线上课分开; 同课名+周几+节次+模式 → 周次并集, 教师/教室轮换进描述
+    # 4) 合并: 线下/线上课分开; 同课名+周几+模式 → 节次连续段聚合成一个事件
+    #    (不能按 period 当 key: 连堂课 2-4 节会被拆成 3 条事件)
     def is_online(room):
         return any(k in room for k in ("在线", "直播", "慕课"))
 
-    merged = {}
+    grouped = {}
     for r in out:
         online = is_online(r["room"])
-        key = (r["course_name"], r["weekday"], r["period"], online)
-        if key not in merged:
-            merged[key] = {"course_name": r["course_name"], "teacher": r["teacher"],
-                           "rooms": [r["room"]], "weekday": r["weekday"],
-                           "start": r["period"], "end": r["period"],
-                           "weeks": set(r["week_list"]), "course_no": r["course_no"],
-                           "online": online, "teachers": [r["teacher"]]}
-        else:
-            mrec = merged[key]
-            mrec["start"] = min(mrec["start"], r["period"])
-            mrec["end"] = max(mrec["end"], r["period"])
-            mrec["weeks"] |= set(r["week_list"])
-            if r["room"] not in mrec["rooms"]:
-                mrec["rooms"].append(r["room"])
-            if r["teacher"] not in mrec["teachers"]:
-                mrec["teachers"].append(r["teacher"])
+        gkey = (r["course_name"], r["weekday"], online)
+        grouped.setdefault(gkey, []).append(r)
 
     courses = []
-    for key, r in sorted(merged.items()):
-        base_name = re.sub(r"\(\d+\)$", "", r["course_name"]).strip()
-        title = EN_ZH_MAP.get(base_name, base_name)  # 中文课名, 未知保留英文
-        prefix = "[线上]" if r["online"] else ""  # 只标注线上, 线下无前缀
-        weeks_sorted = sorted(r["weeks"])
-        room = " / ".join(r["rooms"])
-        teachers = " / ".join(r["teachers"])  # 轮换教师用名字连接
-        note = f"英文: {base_name}"
-        if len(r["rooms"]) > 1:
-            note += f"；教室轮换: {' / '.join(r['rooms'])}"
-        courses.append({
-            "name": f"{prefix}{title}", "teacher": teachers, "location": room,
-            "day": r["weekday"] + 1, "start": r["start"], "end": r["end"],
-            "weeks": ",".join(str(w) for w in weeks_sorted), "note": note,
-        })
+    for gkey in sorted(grouped):
+        recs = grouped[gkey]
+        course_name, weekday, online = gkey
+        periods = sorted({r["period"] for r in recs})
+        # 节次连续段切分 (如 [2,3,4] → [2,3,4]; [10,11] → [10,11]; [0,2] → [0],[2])
+        segs, cur = [], [periods[0]]
+        for p in periods[1:]:
+            if p == cur[-1] + 1:
+                cur.append(p)
+            else:
+                segs.append(cur)
+                cur = [p]
+        segs.append(cur)
+        for seg in segs:
+            recs_in = [r for r in recs if r["period"] in seg]
+            rooms, teachers = [], []
+            weeks: set = set()
+            for r in recs_in:
+                if r["room"] not in rooms:
+                    rooms.append(r["room"])
+                if r["teacher"] not in teachers:
+                    teachers.append(r["teacher"])
+                weeks |= set(r["week_list"])
+            weeks_sorted = sorted(weeks)
+            base_name = re.sub(r"\(\d+\)$", "", course_name).strip()
+            title = EN_ZH_MAP.get(base_name, base_name)  # 中文课名, 未知保留英文
+            prefix = "[线上]" if online else ""  # 只标注线上, 线下无前缀
+            room = " / ".join(rooms)
+            note = f"英文: {base_name}"
+            if len(rooms) > 1:
+                note += f"；教室轮换: {' / '.join(rooms)}"
+            courses.append({
+                "name": f"{prefix}{title}", "teacher": " / ".join(teachers),
+                "location": room, "day": weekday + 1,
+                "start": seg[0], "end": seg[-1],
+                "weeks": ",".join(str(w) for w in weeks_sorted), "note": note,
+            })
     print(f"[EAMS] 解析 {len(out)} 条活动 → 合并 {len(courses)} 门课次")
     return {"semester_id": int(sid), "courses": courses}
 
