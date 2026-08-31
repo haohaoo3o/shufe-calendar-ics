@@ -263,11 +263,17 @@ def fetch_eams_courses():
         if re.search(r"y0:\[\{id:\d+,", raw):
             break
         import time
-        time.sleep(2)
+        time.sleep(3)
+        # 冷会话首查常返回空(semesters:{}), 补一次热身再试
+        form_post(f"{EAMS}/dataQuery.action", {"dataType": "projectId", "entityId": ""})
     m0 = re.search(r"y0:\[\{id:(\d+),", raw)
     if not m0:
-        raise RuntimeError(f"学期列表解析失败: {raw[:200]}")
-    sid = m0.group(1)  # 最新学年 (y0) 第1学期
+        # 兜底: 学期列表持续为空时按已知学期 ID 直接抓课表 (Actions 境外 IP 冷会话实测),
+        # 课表步骤自带 FreeMarker/活动数校验, 拿错 ID 会在此失败, 不会产出坏数据
+        print("[EAMS] 学期列表持续为空, 兜底用已知学期 3928 (2026-2027-1)")
+        sid = "3928"
+    else:
+        sid = m0.group(1)  # 最新学年 (y0) 第1学期
     print(f"[EAMS] 当前学期 semesterId={sid}")
 
     # 2) 课表 (ignoreHead=1 必带: index 页隐藏表单字段, 缺了会触发服务端 include
