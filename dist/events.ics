@@ -25,4 +25,16 @@ DESCRIPTION:校AI财经开发与服务中心主办 | 讲师：杨欣蕾（
  平台介绍、文本数据实证研究新范式
 LOCATION:腾讯会议 982-213-367
 END:VEVENT
+BEGIN:VEVENT
+SUMMARY:国才杯综合能力赛初赛（全国统一线上 · 上财闭
+ 卷笔试）
+DTSTART;TZID=Asia/Shanghai:20261011T093000
+DTEND;TZID=Asia/Shanghai:20261011T110000
+UID:fa04f1396dd29fa087bd9cf6833e8f67ba5bc613@shufe-calendar
+DESCRIPTION:90分钟：客观题若干 + 议论文写作1篇（350-400词
+ ）| 建议提前30分钟到场登录备考 | 主题 China in the Garden o
+ f Civilizations | 省赛晋级须10/8前自愿上传定题演讲视频（
+ 未传只评校奖不晋级）| 咨询 guocaibei2026@126.com
+LOCATION:上财考场（具体教室看企业微信通知）
+END:VEVENT
 END:VCALENDAR
