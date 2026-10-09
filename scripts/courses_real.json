@@ -3,7 +3,7 @@
  "courses": [
   {
    "name": "马克思主义基本原理",
-   "teacher": "丁晓钦 / 陆夏",
+   "teacher": "陆夏 / 丁晓钦",
    "location": "一教203",
    "day": 3,
    "start": 7,
@@ -13,7 +13,7 @@
   },
   {
    "name": "[线上]马克思主义基本原理",
-   "teacher": "丁晓钦 / 陆夏",
+   "teacher": "陆夏",
    "location": "在线教学（直播/慕课）",
    "day": 3,
    "start": 7,
@@ -24,7 +24,7 @@
   {
    "name": "数据世界探秘",
    "teacher": "吴纯杰",
-   "location": "科研实验大楼B102",
+   "location": "科研实验大楼B102 / 统计主楼114会议室",
    "day": 1,
    "start": 10,
    "end": 11,
@@ -84,7 +84,7 @@
   {
    "name": "市场营销学",
    "teacher": "楼尊",
-   "location": "三教202",
+   "location": "武东路梯五",
    "day": 5,
    "start": 10,
    "end": 11,

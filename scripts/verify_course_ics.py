@@ -72,11 +72,42 @@ def expand_event(ev, semester_start: date):
     }
 
 
+def check_makeup_event(info, makeup, courses, periods, parse_weeks, suffix, failures):
+    """校验单个调休补课事件：发生日期→makeup.json 配置项→源课程
+    （星期/单双周/时间/地点）逐项核对。注意：事件日期的日历周没有意义，
+    单双周一律按配置项的 as_week 判定。"""
+    name = info["summary"]
+    base = name[:-len(suffix)] if name.endswith(suffix) else name
+    occ = info["occurrences"][0].isoformat() if info["occurrences"] else "?"
+    entry = next((m for m in makeup if m["date"] == occ), None)
+    if entry is None:
+        failures.append(f"[FAIL] {name}: {occ} 在 makeup.json 里没有对应调休配置")
+        print(f"[FAIL] {name} {occ} 无调休配置")
+        return
+    wd, wk = entry["as_weekday"], entry["as_week"]
+    src = next((c for c in courses
+                if c["name"] == base and c["day"] == wd and wk in parse_weeks(c["weeks"])), None)
+    if src is None:
+        failures.append(f"[FAIL] {name}: makeup {occ} 按周{wd}第{wk}周上课，但源课程对不上"
+                        f"（星期不符或第{wk}周停课？）")
+        print(f"[FAIL] {name} {occ} 源课程对不上（周{wd}第{wk}周无此课）")
+        return
+    es, ee = periods[str(src["start"])][0], periods[str(src["end"])][1]
+    ok = (info["start"] == es and info["end"] == ee
+          and info["location"] == (src.get("location") or ""))
+    if not ok:
+        failures.append(f"[FAIL] {name}: 时间/地点不符: 期望 {es}-{ee} {src.get('location')} "
+                        f"实际 {info['start']}-{info['end']} {info['location']}")
+    print(f"[{'PASS' if ok else 'FAIL'}] {name} {occ}（按周{wd}第{wk}周） "
+          f"{info['start']}-{info['end']} {info['location']}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ics", default="dist/course.ics")
     ap.add_argument("--courses", default="scripts/courses_real.json")
     ap.add_argument("--semester-start", default="2026-08-31")
+    ap.add_argument("--makeup", default="scripts/makeup.json")
     args = ap.parse_args()
 
     semester_start = date.fromisoformat(args.semester_start)
@@ -84,6 +115,15 @@ def main():
         cal = Calendar.from_ical(f.read())
     with open(args.courses, encoding="utf-8") as f:
         courses = json.load(f)["courses"]
+
+    sys.path.insert(0, "scripts")
+    from shufe_ics_gen import DEFAULT_PERIODS as _P, MAKEUP_SUFFIX, parse_weeks  # noqa: F401
+    import os as _os
+    makeup = []
+    if _os.path.exists(args.makeup):
+        with open(args.makeup, encoding="utf-8") as f:
+            makeup = json.load(f)
+    makeup_seen = set()
 
     # 按 (weekday, start) 索引期望课程
     expect = defaultdict(list)
@@ -94,6 +134,13 @@ def main():
     checked = 0
     for ev in cal.walk("VEVENT"):
         info = expand_event(ev, semester_start)
+        uid = str(ev.get("uid") or "")
+        # 调休补课事件：走 makeup.json 校验，不走常规周次匹配
+        if uid.startswith("tiaoxiu-") or info["summary"].endswith(MAKEUP_SUFFIX):
+            check_makeup_event(info, makeup, courses, _P, parse_weeks, MAKEUP_SUFFIX, failures)
+            occ0 = info["occurrences"][0].isoformat() if info["occurrences"] else "?"
+            makeup_seen.add((info["summary"], occ0))
+            continue
         key = (info["weekday"], int(info["start"][:2]) * 60 + int(info["start"][3:]))
         # 节次 start → 用 period 映射回查（简化：用时间戳找期望）
         cands = []
@@ -153,7 +200,15 @@ def main():
     if missing:
         failures.append(f"[FAIL] 数据源中存在但 ICS 缺失: {sorted(missing)}")
 
-    print(f"\n共核对 {checked}/{len(courses)} 门课次")
+    # 反向检查 2：makeup.json 每个条目 × 匹配课程都必须出现在 ICS 里
+    for m in makeup:
+        wd, wk = m["as_weekday"], m["as_week"]
+        for c in courses:
+            if c["day"] == wd and wk in parse_weeks(c["weeks"]):
+                if (c["name"] + MAKEUP_SUFFIX, m["date"]) not in makeup_seen:
+                    failures.append(f"[FAIL] 调休缺失: {m['date']} 应有 {c['name']}{MAKEUP_SUFFIX}，ICS 里没有")
+
+    print(f"\n共核对 {checked}/{len(courses)} 门课次 + {len(makeup_seen)} 个调休补课事件（配置 {len(makeup)} 条）")
     if failures:
         print("\n".join(failures))
         sys.exit(1)

@@ -65,6 +65,22 @@ python scripts/shufe_ics_gen.py --demo                        # 示例课表
 python scripts/shufe_ics_gen.py --events scripts/events.json --outdir dist
 ```
 
+## 调休补课（course.ics）
+
+EAMS 只有静态周次，不含学校调休安排。凡学校通知「某月某日上星期几的课」，按以下流程更新（示例：2026 国庆调休，10/10 周六上 10/7 周三第 6 周的课）：
+
+1. 在 `scripts/makeup.json` 里加一条（`date`=补课发生的日期，`as_weekday`=按星期几的课表，`as_week`=按第几教学周判定单双周，`note`=注明通知来源）；
+2. 重新生成并校验（校验必过才能提交）；
+3. 提交推送；Actions 此后每天 14:00 的自动更新也会带上调休（workflow 已传 `--makeup`，不会覆盖丢失）。
+
+```bash
+python scripts/shufe_ics_gen.py --courses scripts/courses_real.json --makeup scripts/makeup.json --outdir dist
+python scripts/shufe_ics_gen.py --holidays scripts/calendar_events.json --outdir dist   # 如校历事件有变
+python scripts/verify_course_ics.py
+```
+
+调休事件在日历里显示为「课名（调休补课）」，UID 前缀 `tiaoxiu-`，与常规 RRULE 事件互不干扰。
+
 ## 路线图
 
 - [x] EAMS 真实课表接入（2026-2027-1）

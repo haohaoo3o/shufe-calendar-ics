@@ -179,11 +179,63 @@ def render(cal: Calendar) -> bytes:
     return cal.to_ical().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
 
 
-def build_course_ics(courses, semester_start: date, periods=None) -> bytes:
+MAKEUP_SUFFIX = "（调休补课）"
+
+
+def makeup_events(cal: Calendar, courses: list, makeup: list, periods: dict):
+    """调休补课：在指定日期按另一星期的课表上课。
+
+    EAMS 的 TaskActivity 只有静态周次，不含学校调休安排，必须手工维护
+    scripts/makeup.json（学校放假调休通知为准）：
+      [{date: '2026-10-10', as_weekday: 3, as_week: 6, note: '...'}]
+    → 在 date 当天，为所有「day == as_weekday 且 as_week ∈ weeks」的课程
+    生成单次事件。单双周按 as_week 判定（如第 6 周周三只上[线上]马原，
+    不上奇周的线下马原）。
+    """
+    import hashlib
+    from icalendar import Alarm
+    for m in makeup:
+        mdate = date.fromisoformat(m["date"])
+        wd, wk = m["as_weekday"], m["as_week"]
+        hit = 0
+        for c in courses:
+            if c["day"] != wd:
+                continue
+            if wk not in parse_weeks(c["weeks"]):
+                continue
+            start_h, start_m = map(int, periods[str(c["start"])][0].split(":"))
+            end_h, end_m = map(int, periods[str(c["end"])][1].split(":"))
+            ev = Event()
+            ev.add("summary", f"{c['name']}{MAKEUP_SUFFIX}")
+            uid_src = f"tiaoxiu|{m['date']}|{c['name']}|{c['day']}|{c['start']}-{c['end']}"
+            ev.add("uid", "tiaoxiu-" + hashlib.sha1(uid_src.encode()).hexdigest() + "@shufe-calendar")
+            if c.get("location"):
+                ev.add("location", c["location"])
+            desc = c.get("teacher", "")
+            if m.get("note"):
+                desc = f"{desc}\n{m['note']}" if desc else m["note"]
+            ev.add("description", desc)
+            ev.add("dtstart", datetime(mdate.year, mdate.month, mdate.day,
+                                       start_h, start_m, tzinfo=TZ))
+            ev.add("dtend", datetime(mdate.year, mdate.month, mdate.day,
+                                     end_h, end_m, tzinfo=TZ))
+            alarm = Alarm()
+            alarm.add("action", "DISPLAY")
+            alarm.add("description", c.get("reminders") or "上课前 10 分钟")
+            alarm.add("trigger", timedelta(minutes=-int(c.get("remind_minutes", 10))))
+            ev.add_component(alarm)
+            cal.add_component(ev)
+            hit += 1
+        print(f"[调休] {m['date']} 按周{wd}第{wk}周上课 → {hit} 门课次")
+
+
+def build_course_ics(courses, semester_start: date, periods=None, makeup=None) -> bytes:
     cal = new_calendar("上财课表", "SHUFE 课程表订阅源")
     periods = periods or DEFAULT_PERIODS
     for c in courses:
         course_event(cal, c, semester_start, periods)
+    if makeup:
+        makeup_events(cal, courses, makeup, periods)
     return render(cal)
 
 
@@ -393,6 +445,7 @@ def main():
     ap.add_argument("--eams", action="store_true", help="从 EAMS 拉取课表（开学后可用）")
     ap.add_argument("--holidays", metavar="JSON", help="从校历 JSON 生成 holidays.ics")
     ap.add_argument("--events", metavar="JSON", help="从日程 JSON 生成 events.ics（培训/会议等通用日程）")
+    ap.add_argument("--makeup", metavar="JSON", help="调休补课配置（EAMS 不含调休数据，需手工维护 scripts/makeup.json）")
     ap.add_argument("--semester-start", default="2026-08-31", help="开学第一周周一日期（2026-2027-1 = 2026-08-31，校历确认）")
     ap.add_argument("--periods", help="节次时间映射 JSON（可选）")
     ap.add_argument("--outdir", default="dist", help="输出目录（默认 ./dist）")
@@ -445,8 +498,12 @@ def main():
 
     import os
     os.makedirs(args.outdir, exist_ok=True)
+    makeup = None
+    if args.makeup:
+        with open(args.makeup, encoding="utf-8") as f:
+            makeup = json.load(f)
     with open(os.path.join(args.outdir, "course.ics"), "wb") as f:
-        f.write(build_course_ics(courses, semester_start, periods))
+        f.write(build_course_ics(courses, semester_start, periods, makeup))
     print(f"[OK] 生成 {args.outdir}/course.ics（{len(courses)} 门课，学期起始 {semester_start}）")
 
 
