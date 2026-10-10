@@ -40,9 +40,9 @@ END:VEVENT
 BEGIN:VEVENT
 SUMMARY:国才杯综合能力赛初赛（全国统一线上 · 上财闭
  卷笔试）
-DTSTART;TZID=Asia/Shanghai:20261011T093000
-DTEND;TZID=Asia/Shanghai:20261011T110000
-UID:fa04f1396dd29fa087bd9cf6833e8f67ba5bc613@shufe-calendar
+DTSTART;TZID=Asia/Shanghai:20261011T133000
+DTEND;TZID=Asia/Shanghai:20261011T150000
+UID:6111bbfcdfce4ebf556eff90fd2e4eb026ca86b7@shufe-calendar
 DESCRIPTION:90分钟：客观题若干 + 议论文写作1篇（350-400词
  ）| 建议提前30分钟到场登录备考 | 主题 China in the Garden o
  f Civilizations | 省赛晋级须10/8前自愿上传定题演讲视频（
