@@ -24,6 +24,18 @@ DESCRIPTION:校AI财经开发与服务中心主办 | 讲师：杨欣蕾（
  介绍、企业微观数据价值探索、RESSET财经文本智能分析
  平台介绍、文本数据实证研究新范式
 LOCATION:腾讯会议 982-213-367
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:AI财经工作坊第11期：基于RESSET数据平台的智能
+ 分析实践
+TRIGGER:-P1D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:AI财经工作坊第11期：基于RESSET数据平台的智能
+ 分析实践
+TRIGGER:-PT1H
+END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 SUMMARY:国才杯综合能力赛初赛（全国统一线上 · 上财闭
@@ -36,5 +48,17 @@ DESCRIPTION:90分钟：客观题若干 + 议论文写作1篇（350-400词
  f Civilizations | 省赛晋级须10/8前自愿上传定题演讲视频（
  未传只评校奖不晋级）| 咨询 guocaibei2026@126.com
 LOCATION:上财考场（具体教室看企业微信通知）
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:国才杯综合能力赛初赛（全国统一线上 · 上财
+ 闭卷笔试）
+TRIGGER:-P1D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:国才杯综合能力赛初赛（全国统一线上 · 上财
+ 闭卷笔试）
+TRIGGER:-PT1H
+END:VALARM
 END:VEVENT
 END:VCALENDAR

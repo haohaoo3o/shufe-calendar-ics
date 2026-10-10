@@ -270,6 +270,19 @@ def build_events_ics(events_file: str) -> bytes:
         ev.add("dtend", end)
         ev.add("uid", hashlib.sha1(
             f"{e['title']}|{e['start']}|{e.get('location', '')}".encode()).hexdigest() + "@shufe-calendar")
+        # 默认提醒：开始前 1 天 + 1 小时（VALARM；macOS 订阅生效，iOS 需 iOS 26+
+        # 在该日历 ⓘ 里打开「日程提醒」）。单条可用 "alarms" 覆盖，取值如
+        # ["1D", "1H", "30M"]，空数组 = 不提醒。
+        from icalendar import Alarm as _Alarm
+        for spec in e.get("alarms", ["1D", "1H"]):
+            num, unit = int(spec[:-1]), spec[-1].upper()
+            delta = {"D": timedelta(days=num), "H": timedelta(hours=num),
+                     "M": timedelta(minutes=num)}[unit]
+            al = _Alarm()
+            al.add("action", "DISPLAY")
+            al.add("description", e["title"])
+            al.add("trigger", -delta)
+            ev.add_component(al)
         cal.add_component(ev)
     return render(cal)
 

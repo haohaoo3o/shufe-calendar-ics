@@ -65,6 +65,12 @@ python scripts/shufe_ics_gen.py --demo                        # 示例课表
 python scripts/shufe_ics_gen.py --events scripts/events.json --outdir dist
 ```
 
+### 日程提醒（VALARM）
+
+events.ics 每个事件默认带两个提醒：**开始前 1 天 + 开始前 1 小时**。单条可用 `"alarms"` 覆盖（如 `"alarms": ["1D", "30M"]`，`"alarms": []` = 不提醒）。
+
+⚠️ iPhone 上订阅日历默认不响铃：**iOS 26 在「日历列表 → 该日历 ⓘ → 打开『日程提醒』」**；macOS 订阅时不要勾选「移除提醒」。打开后上述两个提醒才会真正推送。
+
 ## 调休补课（course.ics）
 
 EAMS 只有静态周次，不含学校调休安排。凡学校通知「某月某日上星期几的课」，按以下流程更新（示例：2026 国庆调休，10/10 周六上 10/7 周三第 6 周的课）：
